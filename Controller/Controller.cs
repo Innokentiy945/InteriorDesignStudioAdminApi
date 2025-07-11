@@ -1,8 +1,10 @@
-using InteriorDesignStudioAdminApi.Repository;
-using InteriorDesignStudioApi.Models;
+using AdminInteriorDesignStudioApi.Models;
+using AdminInteriorDesignStudioApi.Repository;
 using Microsoft.AspNetCore.Mvc;
+using UserInteriorDesignStudioApi.Models;
 
-namespace InteriorDesignStudioAdminApi.Controller;
+
+namespace AdminInteriorDesignStudioApi.Controller;
 [ApiController]
 [Route("api/admin")]
 public class Controller : ControllerBase
@@ -16,14 +18,14 @@ public class Controller : ControllerBase
 
     [HttpGet]
     [Route("searchActive")]
-    public async Task<List<OrderModel>> SearchOrder(string searchWord)
+    public async Task<List<OrderModel>> SearchOpenedOrder(string searchWord)
     {
         return await _adminRepository.SearchOpenedOrder(searchWord);
     }
 
     [HttpGet]
     [Route("searchArchive")]
-    public async Task<List<OrderModel>> SearchArchivedOrders(string searchWord)
+    public async Task<List<ArchivedOrderModel>> SearchArchivedOrders(string searchWord)
     {
         return await _adminRepository.SearchArchivedOrders(searchWord);
     }
@@ -37,14 +39,14 @@ public class Controller : ControllerBase
     
     [HttpPost]
     [Route("unarchive")]
-    public async Task UnarchiveOrder(OrderModel order)
+    public async Task UnarchiveOrder(ArchivedOrderModel order)
     {
         await _adminRepository.UnarchiveOrder(order);
     }
     
     [HttpPost]
     [Route("editOrder")]
-    public async Task<InteriorDesignStudioApi.Models.OrderModel> EditOrder(OrderModel order)
+    public async Task<OrderModel> EditOrder(OrderModel order)
     {
         return await _adminRepository.EditOrder(order);
     }

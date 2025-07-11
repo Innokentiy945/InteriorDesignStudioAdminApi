@@ -1,9 +1,10 @@
-using InteriorDesignStudioAdminApi.Context;
-using InteriorDesignStudioApi.Context;
-using InteriorDesignStudioApi.Models;
+using AdminInteriorDesignStudioApi.Context;
+using AdminInteriorDesignStudioApi.Models;
 using Microsoft.EntityFrameworkCore;
+using UserInteriorDesignStudioApi.Context;
+using UserInteriorDesignStudioApi.Models;
 
-namespace InteriorDesignStudioAdminApi.Repository;
+namespace AdminInteriorDesignStudioApi.Repository;
 
 public class AdminService : IAdminRepository
 {
@@ -24,7 +25,20 @@ public class AdminService : IAdminRepository
         try
         {
             _logger.LogInformation("Order placed to finished");
-            if (result != null) await _adminAdminStudioContext.FinishedOrders.AddAsync(result);
+            if (result != null)
+            {
+                var orderModel = new OrderModel
+                {
+                    OrderId = result.OrderId,
+                    OrderDate = result.OrderDate,
+                    OrderDetails = result.OrderDetails,
+                    CustomerEmail = result.CustomerEmail,
+                    CustomerName = result.CustomerName,
+                    CustomerPhone = result.CustomerPhone
+                };
+
+                await _userStudioContext.Orders.AddAsync(orderModel);
+            }
         }
         catch (Exception e)
         {
@@ -33,13 +47,28 @@ public class AdminService : IAdminRepository
         }
     }
 
-    public async Task UnarchiveOrder(OrderModel order)
+    public async Task UnarchiveOrder(ArchivedOrderModel archivedOrder)
     {
-        var result = await _adminAdminStudioContext.FinishedOrders.FindAsync(order);
+        ArchivedOrderModel? result = await _adminAdminStudioContext.FinishedOrders.FindAsync(archivedOrder);
+    
         try
         {
             _logger.LogInformation("Order returned to active");
-            if (result != null) await _userStudioContext.Orders.AddAsync(result);
+        
+            if (result != null)
+            {
+                var orderModel = new OrderModel
+                {
+                    OrderId = result.OrderId,
+                    OrderDate = result.OrderDate,
+                    OrderDetails = result.OrderDetails,
+                    CustomerEmail = result.CustomerEmail,
+                    CustomerName = result.CustomerName,
+                    CustomerPhone = result.CustomerPhone
+                };
+
+                await _userStudioContext.Orders.AddAsync(orderModel);
+            }
         }
         catch (Exception e)
         {
@@ -57,13 +86,11 @@ public class AdminService : IAdminRepository
             if (!string.IsNullOrEmpty(searchWord))
             {
                 _logger.LogInformation("Searching...");
-                query = query.Where(x => 
-                    x.OrderNumber.Contains(searchWord)
-                    || x.OrderDate.Equals(searchWord)
-                    || x.OrderDetails.Contains(searchWord)
-                    || x.CustomerEmail.Contains(searchWord)
-                    || x.CustomerName.Contains(searchWord)
-                    || x.CustomerPhone.Contains(searchWord));}
+                query = query.Where(x => x.OrderDate.Equals(searchWord)
+                                         || x.OrderDetails.Contains(searchWord)
+                                         || x.CustomerEmail.Contains(searchWord)
+                                         || x.CustomerName.Contains(searchWord)
+                                         || x.CustomerPhone.Equals(searchWord));}
 
             _logger.LogInformation("Searching finished!");
             return await query.ToListAsync();
@@ -75,9 +102,9 @@ public class AdminService : IAdminRepository
         }
     }
 
-    public async Task<List<OrderModel>> SearchArchivedOrders(string searchWord)
+    public async Task<List<ArchivedOrderModel>> SearchArchivedOrders(string searchWord)
     {
-        IQueryable<OrderModel> query = _adminAdminStudioContext.FinishedOrders;
+        IQueryable<ArchivedOrderModel> query = _adminAdminStudioContext.FinishedOrders;
             
         try
         {
@@ -85,12 +112,11 @@ public class AdminService : IAdminRepository
             {
                 _logger.LogInformation("Searching...");
                 query = query.Where(x => 
-                    x.OrderNumber.Contains(searchWord)
-                    || x.OrderDate.Equals(searchWord)
+                     x.OrderDate.Equals(searchWord)
                     || x.OrderDetails.Contains(searchWord)
                     || x.CustomerEmail.Contains(searchWord)
                     || x.CustomerName.Contains(searchWord)
-                    || x.CustomerPhone.Contains(searchWord));}
+                    || x.CustomerPhone.Equals(searchWord));}
 
             _logger.LogInformation("Searching finished!");
             return await query.ToListAsync();
@@ -111,7 +137,6 @@ public class AdminService : IAdminRepository
             _logger.LogInformation("Editing order...");
             if (result != null)
             {
-                result.OrderNumber = order.OrderNumber;
                 result.OrderDate = order.OrderDate;
                 result.OrderDetails = order.OrderDetails;
                 result.CustomerEmail = order.CustomerEmail;

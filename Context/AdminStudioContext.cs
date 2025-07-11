@@ -1,10 +1,10 @@
-using InteriorDesignStudioApi.Models;
+using AdminInteriorDesignStudioApi.Models;
 using Microsoft.EntityFrameworkCore;
 
-namespace InteriorDesignStudioAdminApi.Context;
+namespace AdminInteriorDesignStudioApi.Context;
 
 public class AdminStudioContext : DbContext
 {
     public AdminStudioContext(DbContextOptions<AdminStudioContext> options) : base(options) { }
-    public DbSet<OrderModel> FinishedOrders { get; set; }
+    public DbSet<ArchivedOrderModel> FinishedOrders { get; set; }
 }

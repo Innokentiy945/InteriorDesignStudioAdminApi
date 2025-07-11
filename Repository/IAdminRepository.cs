@@ -1,18 +1,17 @@
+using AdminInteriorDesignStudioApi.Models;
+using UserInteriorDesignStudioApi.Models;
 
-
-using InteriorDesignStudioApi.Models;
-
-namespace InteriorDesignStudioAdminApi.Repository;
+namespace AdminInteriorDesignStudioApi.Repository;
 
 public interface IAdminRepository
 {
     public Task ArchiveOrder(OrderModel order);
     
-    public Task UnarchiveOrder(OrderModel order);
+    public Task UnarchiveOrder(ArchivedOrderModel archivedOrder);
     
     public Task<List<OrderModel>> SearchOpenedOrder(string searchWord);
     
-    public Task<List<OrderModel>> SearchArchivedOrders(string searchWord);
+    public Task<List<ArchivedOrderModel>> SearchArchivedOrders(string searchWord);
     
     public Task<OrderModel> EditOrder(OrderModel order);
     
