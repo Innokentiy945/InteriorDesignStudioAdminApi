@@ -4,15 +4,15 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace AdminInteriorDesignStudioApi.Models;
 
 [Table("ArchivedOrders")]
-public class ArchivedOrderModel
+public class ArchivedOrdersModel
 {
-    [Key]
-    public Guid OrderId { get; set; }
-    public DateTime OrderDate { get; set; }
-    public string OrderDetails { get; set; }
-    private string _customerEmail;
-    public string CustomerName { get; set; }
-    public int CustomerPhone { get; set; }
+    [Key] 
+    public Guid? OrderId { get; set; }
+    public DateTime? OrderDate { get; set; }
+    public string? OrderDetails { get; set; }
+    private string? _customerEmail;
+    public string? CustomerName { get; set; }
+    public int? CustomerPhone { get; set; }
 
     public string CustomerEmail
     {

@@ -1,74 +1,45 @@
 using AdminInteriorDesignStudioApi.Context;
 using AdminInteriorDesignStudioApi.Models;
 using Microsoft.EntityFrameworkCore;
-using UserInteriorDesignStudioApi.Context;
-using UserInteriorDesignStudioApi.Models;
 
 namespace AdminInteriorDesignStudioApi.Repository;
 
 public class AdminService : IAdminRepository
 {
     private AdminStudioContext _adminAdminStudioContext;
-    private UserStudioContext _userStudioContext;
     private ILogger<AdminService> _logger;
 
-    public AdminService(AdminStudioContext adminAdminStudioContext, UserStudioContext userStudioContext, ILogger<AdminService> logger)
+    public AdminService(AdminStudioContext adminAdminStudioContext, ILogger<AdminService> logger)
     {
         _adminAdminStudioContext = adminAdminStudioContext;
-        _userStudioContext = userStudioContext;
         _logger = logger;
     }
     
-    public async Task ArchiveOrder(OrderModel order)
+    public async Task ArchiveOrder(ActiveOrdersModel activeOrder)
     {
-        var result = await _userStudioContext.Orders.FindAsync(order);
         try
         {
-            _logger.LogInformation("Order placed to finished");
-            if (result != null)
+            var dataToMove = _adminAdminStudioContext.Orders
+                .Where(s => s.OrderId == activeOrder.OrderId).ToList();
+            
+            foreach (var item in dataToMove)
             {
-                var orderModel = new OrderModel
+                var transferedItem = new ArchivedOrdersModel
                 {
-                    OrderId = result.OrderId,
-                    OrderDate = result.OrderDate,
-                    OrderDetails = result.OrderDetails,
-                    CustomerEmail = result.CustomerEmail,
-                    CustomerName = result.CustomerName,
-                    CustomerPhone = result.CustomerPhone
+                    OrderId = activeOrder.OrderId,
+                    OrderDate = activeOrder.OrderDate,
+                    OrderDetails = activeOrder.OrderDetails,
+                    CustomerName = activeOrder.CustomerName,
+                    CustomerPhone = activeOrder.CustomerPhone,
+                    CustomerEmail = activeOrder.CustomerEmail,
                 };
-
-                await _userStudioContext.Orders.AddAsync(orderModel);
-            }
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e.Message);
-            throw;
-        }
-    }
-
-    public async Task UnarchiveOrder(ArchivedOrderModel archivedOrder)
-    {
-        ArchivedOrderModel? result = await _adminAdminStudioContext.FinishedOrders.FindAsync(archivedOrder);
-    
-        try
-        {
-            _logger.LogInformation("Order returned to active");
         
-            if (result != null)
-            {
-                var orderModel = new OrderModel
-                {
-                    OrderId = result.OrderId,
-                    OrderDate = result.OrderDate,
-                    OrderDetails = result.OrderDetails,
-                    CustomerEmail = result.CustomerEmail,
-                    CustomerName = result.CustomerName,
-                    CustomerPhone = result.CustomerPhone
-                };
-
-                await _userStudioContext.Orders.AddAsync(orderModel);
+                _adminAdminStudioContext.FinishedOrders.Add(transferedItem);
             }
+
+            _adminAdminStudioContext.Orders.RemoveRange(dataToMove);
+            
+            await _adminAdminStudioContext.SaveChangesAsync();
         }
         catch (Exception e)
         {
@@ -77,9 +48,42 @@ public class AdminService : IAdminRepository
         }
     }
 
-    public async Task<List<OrderModel>> SearchOpenedOrder(string searchWord)
+    public async Task UnarchiveOrder(ArchivedOrdersModel archivedOrder)
     {
-        IQueryable<OrderModel> query = _userStudioContext.Orders;
+        try
+        {
+            var dataToMove = _adminAdminStudioContext.FinishedOrders
+                .Where(s => s.OrderId == archivedOrder.OrderId).ToList();
+            
+            foreach (var item in dataToMove)
+            {
+                var transferedItem = new ActiveOrdersModel
+                {
+                    OrderId = archivedOrder.OrderId,
+                    OrderDate = archivedOrder.OrderDate,
+                    OrderDetails = archivedOrder.OrderDetails,
+                    CustomerName = archivedOrder.CustomerName,
+                    CustomerPhone = archivedOrder.CustomerPhone,
+                    CustomerEmail = archivedOrder.CustomerEmail
+                };
+        
+                _adminAdminStudioContext.Orders.Add(transferedItem);
+            }
+
+            _adminAdminStudioContext.FinishedOrders.RemoveRange(dataToMove);
+            
+            await _adminAdminStudioContext.SaveChangesAsync();
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e.Message);
+            throw;
+        }
+    }
+
+    public async Task<List<ActiveOrdersModel>> SearchActiveOrder(string searchWord)
+    {
+        IQueryable<ActiveOrdersModel> query = _adminAdminStudioContext.Orders;
             
         try
         {
@@ -87,6 +91,7 @@ public class AdminService : IAdminRepository
             {
                 _logger.LogInformation("Searching...");
                 query = query.Where(x => x.OrderDate.Equals(searchWord)
+                                         || x.OrderId.Equals(searchWord)
                                          || x.OrderDetails.Contains(searchWord)
                                          || x.CustomerEmail.Contains(searchWord)
                                          || x.CustomerName.Contains(searchWord)
@@ -102,9 +107,9 @@ public class AdminService : IAdminRepository
         }
     }
 
-    public async Task<List<ArchivedOrderModel>> SearchArchivedOrders(string searchWord)
+    public async Task<List<ArchivedOrdersModel>> SearchArchivedOrders(string searchWord)
     {
-        IQueryable<ArchivedOrderModel> query = _adminAdminStudioContext.FinishedOrders;
+        IQueryable<ArchivedOrdersModel> query = _adminAdminStudioContext.FinishedOrders;
             
         try
         {
@@ -112,7 +117,8 @@ public class AdminService : IAdminRepository
             {
                 _logger.LogInformation("Searching...");
                 query = query.Where(x => 
-                     x.OrderDate.Equals(searchWord)
+                     x.OrderDate.Equals(searchWord) 
+                    || x.OrderId.Equals(searchWord)
                     || x.OrderDetails.Contains(searchWord)
                     || x.CustomerEmail.Contains(searchWord)
                     || x.CustomerName.Contains(searchWord)
@@ -128,21 +134,24 @@ public class AdminService : IAdminRepository
         }
     }
 
-    public async Task<OrderModel> EditOrder(OrderModel order)
+    public async Task<ActiveOrdersModel> EditOrder(string customerName, string customerEmail, int customerPhone, string orderDetails)
     {
-        var result = await _userStudioContext.Orders.FirstOrDefaultAsync(x=>x.OrderId==order.OrderId);
+        var result = await _adminAdminStudioContext.Orders.FirstOrDefaultAsync(
+            x=>x.OrderDetails == orderDetails 
+               || x.CustomerName == customerName
+               || x.CustomerEmail == customerEmail
+               || x.CustomerPhone == customerPhone);
         
         try
         {
-            _logger.LogInformation("Editing order...");
+            _logger.LogInformation("Editing orderModel...");
             if (result != null)
             {
-                result.OrderDate = order.OrderDate;
-                result.OrderDetails = order.OrderDetails;
-                result.CustomerEmail = order.CustomerEmail;
-                result.CustomerName = order.CustomerName;
-                result.CustomerPhone = order.CustomerPhone;
-                await _userStudioContext.SaveChangesAsync();
+                result.OrderDetails = orderDetails;
+                result.CustomerEmail = customerEmail;
+                result.CustomerName = customerName;
+                result.CustomerPhone = customerPhone;
+                await _adminAdminStudioContext.SaveChangesAsync();
                 return result;
             }
         }
@@ -153,5 +162,75 @@ public class AdminService : IAdminRepository
         }
 
         return null;
+    }
+    
+    public async Task<ActiveOrdersModel> SendOrder(string customerName, string customerEmail, int customerPhone, string orderDetails)
+    {
+        try
+        {
+            _logger.LogInformation("Preparing order");
+            var orderModel = new ActiveOrdersModel
+            {
+                OrderId = Guid.NewGuid(),
+                OrderDate = DateTime.Now,
+                OrderDetails = orderDetails,
+                CustomerName = customerName,
+                CustomerEmail = customerEmail,
+                CustomerPhone = customerPhone
+            };
+            
+            var result = await _adminAdminStudioContext.AddAsync(orderModel); 
+            
+            _logger.LogInformation("Order sent!");
+            await _adminAdminStudioContext.SaveChangesAsync();
+            return result.Entity;
+        }
+        catch(Exception ex)
+        {
+            _logger.LogError(ex.Message);
+            throw;
+        }
+    }
+
+    public async Task DeleteOrder(Guid orderId)
+    {
+        var result = await _adminAdminStudioContext.FinishedOrders.FirstOrDefaultAsync(o => o.OrderId == orderId);
+        try
+        {
+            _logger.LogInformation("Deleting order...");
+            _adminAdminStudioContext.FinishedOrders.Remove(result);
+            _logger.LogInformation("Order deleted!");
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e.Message);
+            throw;
+        }
+    }
+
+    public async Task<List<ActiveOrdersModel>> GetAllCustomerOrders()
+    {
+        try
+        {
+            return await _adminAdminStudioContext.Orders.ToListAsync();
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
+    }
+
+    public async Task<List<ArchivedOrdersModel>> GetAllArchivedOrders()
+    {
+        try
+        {
+            return await _adminAdminStudioContext.FinishedOrders.ToListAsync();
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
     }
 }

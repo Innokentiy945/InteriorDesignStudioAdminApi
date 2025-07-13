@@ -5,6 +5,10 @@ namespace AdminInteriorDesignStudioApi.Context;
 
 public class AdminStudioContext : DbContext
 {
-    public AdminStudioContext(DbContextOptions<AdminStudioContext> options) : base(options) { }
-    public DbSet<ArchivedOrderModel> FinishedOrders { get; set; }
+    public AdminStudioContext(DbContextOptions<AdminStudioContext> options) : base(options)
+    {
+        Database.EnsureCreated();
+    }
+    public DbSet<ArchivedOrdersModel> FinishedOrders { get; set; }
+    public DbSet<ActiveOrdersModel> Orders { get; set; }
 }

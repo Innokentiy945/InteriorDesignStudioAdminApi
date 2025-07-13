@@ -1,8 +1,6 @@
 using AdminInteriorDesignStudioApi.Context;
 using AdminInteriorDesignStudioApi.Repository;
 using Microsoft.EntityFrameworkCore;
-using UserInteriorDesignStudioApi.Context;
-using UserInteriorDesignStudioApi.Repository;
 using OpenApiInfo = Microsoft.OpenApi.Models.OpenApiInfo;
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,7 +10,6 @@ builder.Services.AddCors(options =>
         policyBuilder => policyBuilder.WithOrigins("http://localhost:58042").AllowAnyMethod().AllowAnyHeader());
 });
 builder.Services.AddScoped<IAdminRepository, AdminService>();
-builder.Services.AddScoped<IUserRepository, UserService>();
 builder.Services.AddControllersWithViews();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -20,13 +17,10 @@ builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "Admin Studio API", Version = "v1" });
 });
+
 builder.Services.AddDbContext<AdminStudioContext>(options =>
 {
-    options.UseSqlite(builder.Configuration.GetConnectionString("ArchivedOrdersDB"));
-});
-builder.Services.AddDbContext<UserStudioContext>(options =>
-{
-    options.UseSqlite(builder.Configuration.GetConnectionString("OrdersDB"));
+    options.UseSqlite(builder.Configuration.GetConnectionString("Orders.db"));
 });
 
 var app = builder.Build();
