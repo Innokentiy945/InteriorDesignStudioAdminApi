@@ -7,7 +7,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowSpecificOrigin",
-        policyBuilder => policyBuilder.WithOrigins("http://localhost:58042").AllowAnyMethod().AllowAnyHeader());
+        policyBuilder => policyBuilder.WithOrigins("http://localhost:62200/").AllowAnyMethod().AllowAnyHeader());
 });
 builder.Services.AddScoped<IAdminRepository, AdminService>();
 builder.Services.AddControllersWithViews();
